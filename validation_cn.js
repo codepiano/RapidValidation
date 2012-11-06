@@ -560,10 +560,15 @@ $.extend(Validation, {
 				var cn = classes.split(/\s+/);
 				for(var i = 0; i < cn.length; i++) {
 					var value = cn[i];
-					var advice = Validation.getAdvice(value, elm);
-					advice.hide();
-					elm.removeClass('validation-failed');
-					elm.removeClass('validation-passed');
+					var className = Validation.get(value).className;
+					if(className){
+						var advice = Validation.getAdvice(className, elm);
+						if(advice != undefined){
+							advice.hide();
+							elm.removeClass('validation-failed');
+							elm.removeClass('validation-passed');
+						}
+					}
 				}
 			},
 	//添加单个校验规则，function参数可以直接传入正则表达式对象，该函数会使用正则对象生成校验方法，进行校验。
