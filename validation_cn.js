@@ -166,7 +166,11 @@ Validator.messageSource['en-us'] = [
 						},
 		//获取表单元素的ID，如果无ID，则返回name
 		getElmID : function(elm) {
-					   return elm.attr('id') ? elm.attr('id') : elm.attr('name');
+					   var id = elm.attr('id') ? elm.attr('id') : elm.attr('name');
+					   if(id != undefined){
+					   		id = id.replace('\.','\-');
+					   }
+					   return id;
 				   },
 		//用args数组中的值顺序替换%s,比如传入的str是%s-%s-%s,传入的args是[1,2,3],则处理后的结果是1-2-3
 		format : function(str,args) {
@@ -271,7 +275,7 @@ Validator.messageSource['en-us'] = [
 		getI18nMsg : function(key) {
 						 return ValidationUtils.getMessageSource()[key];
 					 },
-		//模拟prototype.js中的all方法 
+		//模拟prototype.js中的all方法
 		all: function(collection,iterator) {
 				 var result = true;
 				 $.each(collection,function(value, index) {
@@ -280,7 +284,7 @@ Validator.messageSource['en-us'] = [
 				 });
 				 return result;
 			 },
-		//模拟prototype.js中的any方法 
+		//模拟prototype.js中的any方法
 		any: function(collection,iterator) {
 				 var result = true;
 				 $.each(collection,function(value, index) {
@@ -341,7 +345,7 @@ Validator.prototype = {
 			   var isEmpty = (this.options.ignoreEmptyValue && ((v == null) || (v.length == 0)));
 			   var elmClass = "";
 			   if(elm && elm[0]){
-					elmClass = elm.attr('class'); 
+					elmClass = elm.attr('class');
 			   }
 			   return  isEmpty || this._test(v,elm,ValidationUtils.getArgumentsByClassName(this.className,elmClass),this);
 		   },
@@ -383,7 +387,7 @@ Validator.prototype = {
 				if(!useTitle){
 					var classes = elm.attr('class') || "";
 					useTitle = classes.indexOf('useTitle') >= 0;
-				} 
+				}
 				return useTitle ? ((elm && elm.attr('title')) ? elm.attr('title') : error) : error;
 			}
 }
@@ -401,7 +405,15 @@ Validation.prototype = {
 	 */
 	initialize : function(form, options){
 					 this.options = $.extend(new ValidationDefaultOptions(), options || {});
-					 this.form =form;
+					 if(form instanceof jQuery){
+					 	this.form = form;
+					 }else if(form.nodeType && form.tagName == 'FORM'){
+					 	this.form = $(form);
+					 }else if(typeof form === 'string'){ 
+					 	this.form = $('#' + form);
+					 }else{
+					 	return;
+					 }
 					 var formId =  ValidationUtils.getElmID($(form));
 					 Validation.validations[formId] = this;
 					 if(this.options.onSubmit) this.form.bind('submit',$.proxy(this.onSubmit,this));
@@ -414,7 +426,7 @@ Validation.prototype = {
 						 //没必要调用makeArray
 						 for(var i = 0; i < elements.length; i++) {
 							 var input = $(elements[i]);
-							 input.bind('blur', function(ev) { 
+							 input.bind('blur', function(ev) {
 									 Validation.validateElement($(ev.target || ev.srcElement),{useTitle : useTitles, onElementValidate : callback});
 								 });
 						 }
@@ -485,7 +497,13 @@ $.extend(Validation, {
 	//创建错误信息
 	newErrorMsgAdvice : function(name,elm,errorMsg) {
 							var advice = '<span class="validation-advice" id="advice-' + name + '-' + ValidationUtils.getElmID(elm) +'" style="display:none">&nbsp;&nbsp;' + errorMsg + '</span>';
-						switch (elm.prop('tagName').toLowerCase()) {
+							var tagName = '';
+							if(elm.prop && elm.prop('tagName') != undefined){
+							   tagName = elm.prop('tagName');
+							}else{
+							   tagName = elm.attr('tagName');
+							}
+						switch (tagName) {
 							case 'checkbox':
 							case 'radio':
 								var p = elm.parent();
@@ -771,9 +789,9 @@ Validation.addAllThese([
 					var request = $.ajax(
 								{
 									url:args.singleArgument,
-									data:params,	
+									data:params,
 									async:false,
-									type:get
+									type:'get'
 								}
 							);
 					var responseText = $.trim(request.responseText);
@@ -790,33 +808,37 @@ Validation.addAllThese([
 				 *    对应的回调函数需事先绑定在Validator.callBack中，绑定形式为Validator.callBack[标签id] = 回调函数的引用
 				 *	  例如：Validator.callBack['example'] = callbackFunc;
 				 * 3).如果返回值为空，则说明校验通过且没有返回数据
-				 * Example: <input id='email' class='validate-ajax-http://localhost:8080/validate-email.jsp'>
+				 * Example: <input id='email' class='validate-ajax-responseJudge-multiParams-http://localhost:8080/validate-email.jsp'>
 				 */
 				['validate-ajax-responseJudge',function(v,elm,args,metadata) {
+					var flag = true;    //该校验通过或不通过的标志位
 					var form = ValidationUtils.getReferenceForm(elm);
 					var params = elm.serialize();
 					params += ValidationUtils.format("&what=%s&value=%s",[elm.name,encodeURIComponent(v)]);
 					var request = $.ajax(
 								{
-									url:args.singleArgument,
-									data:params,	
+									url:args[0],
+									data:params,
 									async:false,
-									type:get
+									type:'get',
+									success:function (msg){
+										var responseText = $.trim(msg);
+										if(responseText != '' && responseText.indexOf('error:') == 0){
+											metadata._error = responseText.substring(6);
+											flag = false;
+										}else if(responseText != ''){
+											var callbackFunc = Validator.callBack[elm.id];
+											if(typeof(callbackFunc) == 'function'){
+												callbackFunc.call(this,responseText);
+											}
+											flag = true;
+										}else{
+											flag = true;
+										}
+									}
 								}
 							);
-					var responseText = $.trim(request.responseText);
-					if(responseText != '' && responseText.indexOf('error:') == 0){
-						metadata._error = responseText.substring(6);
-						return false;
-					}else if(responseText != ''){
-						var callbackFunc = Validator.callBack[elm.id];
-						if(typeof(callbackFunc) == 'function'){
-							callbackFunc.call(this,responseText);
-						}
-						return true;
-					}else{
-						return true;
-					}
+					return flag;
 				}],
 				/*
 				 * Usage: validate-ajax-responseJudge-multiParams-$url-id-id-id....
@@ -827,7 +849,7 @@ Validation.addAllThese([
 				 将返回值作为参数传入，然后由框架进行错误信息的显示流程
 				 * 2).如果返回值不为空且不以'error:'开头，则返回的是需要获取的数据，根据elm的id值，在Validator.callBack中寻找绑定的回调函数，将返回值作为参数传入
 				 * 3).如果返回值为空，则说明校验通过且没有返回数据
-				 * Example: <input id='email' class='validate-ajax-http://localhost:8080/validate-email.jsp-id-id-id'>
+				 * Example: <input id='email' class='validate-ajax-responseJudge-multiParams-http://localhost:8080/validate-email.jsp-id-id-id'>
 				 */
 				['validate-ajax-responseJudge-multiParams',function(v,elm,args,metadata) {
 					var flag = true;	//该校验通过或不通过的标志位
@@ -843,27 +865,29 @@ Validation.addAllThese([
 					var request = $.ajax(
 								{
 									url:args[0],
-									data:params,	
+									data:params,
 									async:false,
-									type:get
+									type:'get',
+									success:function(msg){
+										var responseText = $.trim(msg);
+										if(responseText != '' && responseText.indexOf('error:') == 0){
+											metadata._error = responseText.substring(6);
+											flag = false;
+										}else if(responseText != ''){
+											if(callbackFunc != null && typeof(callbackFunc) == 'function'){
+												callbackFunc.call(this,responseText);
+											}
+											flag = true;
+										}else{
+											flag = true;
+										}
+										var callbackFunc = Validator.callBack[elm.id]; //根绝elm的id获取绑定的回调函数
+										if(callbackFunc != null && typeof(callbackFunc) == 'function'){
+											flag = callbackFunc.call(this,responseText);
+										}
+									}
 								}
 							);
-					var responseText = $.trim(request.responseText);
-					if(responseText != '' && responseText.indexOf('error:') == 0){
-						metadata._error = responseText.substring(6);
-						flag = false;
-					}else if(responseText != ''){
-						if(callbackFunc != null && typeof(callbackFunc) == 'function'){
-							callbackFunc.call(this,responseText);
-						}
-						flag = true;
-					}else{
-						flag = true;
-					}
-					var callbackFunc = Validator.callBack[elm.id]; //根绝elm的id获取绑定的回调函数
-					if(callbackFunc != null && typeof(callbackFunc) == 'function'){
-						callbackFunc.call(this,responseText);
-					}
 					return flag;
 				}],
 				/*
