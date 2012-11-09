@@ -959,9 +959,9 @@ Validation.addAllThese([
 				}],
 				['validate-chinese',/^[\u4e00-\u9fa5]+$/],
 				['validate-phone',/^((0[1-9]{3})?(0[12][0-9])?[-])?\d{6,8}$/],
-				['validate-mobile-phone',/(^0?[1][358][0-9]{9}$)/],
+				['validate-mobile-phone',/(^0?[1][3458][0-9]{9}$)/],
 				['validate-zip',/^[1-9]\d{5}$/],
-				['validate-qq',/^[1-9]\d{4,8}$/]
+				['validate-qq',/^[1-9]\d{4,9}$/]
 				]);
 
 				//初始化，绑定所有需要校验的form，同时绑定reset事件
