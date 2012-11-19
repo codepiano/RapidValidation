@@ -783,7 +783,6 @@ Validation.addAllThese([
 				 * Example: <input id='email' class='validate-ajax-http://localhost:8080/validate-email.jsp'>
 				 */
 				['validate-ajax',function(v,elm,args,metadata) {
-					var form = ValidationUtils.getReferenceForm(elm);
 					var params = elm.serialize();
 					params += ValidationUtils.format("&what=%s&value=%s",[elm.name,encodeURIComponent(v)]);
 					var request = $.ajax(
@@ -812,7 +811,6 @@ Validation.addAllThese([
 				 */
 				['validate-ajax-responseJudge',function(v,elm,args,metadata) {
 					var flag = true;    //该校验通过或不通过的标志位
-					var form = ValidationUtils.getReferenceForm(elm);
 					var params = elm.serialize();
 					params += ValidationUtils.format("&what=%s&value=%s",[elm.name,encodeURIComponent(v)]);
 					var request = $.ajax(
@@ -827,11 +825,10 @@ Validation.addAllThese([
 											metadata._error = responseText.substring(6);
 											flag = false;
 										}else if(responseText != ''){
-											var callbackFunc = Validator.callBack[elm.id];
-											if(typeof(callbackFunc) == 'function'){
-												callbackFunc.call(this,responseText);
+											var callbackFunc = Validator.callBack[elm.attr("id")]; //根绝elm的id获取绑定的回调函数
+											if(callbackFunc != null && typeof(callbackFunc) == 'function'){
+												flag = callbackFunc.call(this,responseText);
 											}
-											flag = true;
 										}else{
 											flag = true;
 										}
@@ -874,16 +871,12 @@ Validation.addAllThese([
 											metadata._error = responseText.substring(6);
 											flag = false;
 										}else if(responseText != ''){
+											var callbackFunc = Validator.callBack[elm.attr("id")]; //根绝elm的id获取绑定的回调函数
 											if(callbackFunc != null && typeof(callbackFunc) == 'function'){
-												callbackFunc.call(this,responseText);
+												flag = callbackFunc.call(this,responseText);
 											}
-											flag = true;
 										}else{
 											flag = true;
-										}
-										var callbackFunc = Validator.callBack[elm.id]; //根绝elm的id获取绑定的回调函数
-										if(callbackFunc != null && typeof(callbackFunc) == 'function'){
-											flag = callbackFunc.call(this,responseText);
 										}
 									}
 								}
