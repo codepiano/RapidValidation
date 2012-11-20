@@ -226,7 +226,9 @@ AJAX校验:
 
 	如果使用静态提交方式,即<input type="submit" />,可以正常进行提交事件的捕获
 
-	如果使用动态提交,例如<input type="button" onclick="fireSubmit()" />,在fireSubmit函数中提交表单,则提交方式必须调用jQuery的submit()方法,否则将无法校验表单
+	如果使用动态提交,例如<input type="button" onclick="fireSubmit()" />,在fireSubmit函数中提交表单
+	
+	则提交方式必须调用jQuery的submit()方法,否则将无法校验表单
 
 TODO
 ------
