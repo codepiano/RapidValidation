@@ -611,19 +611,29 @@ $.extend(Validation, {
 						  Validation.add(value[0], value[1], (value.length > 2 ? value[2] : {}));
 					  }
 				  },
-	//根据class的名字获得对应的校验函数，支持模糊查询
-	//如果存在，返回该class对应的校验函数
-	//如果不存在，new一个Validator对象返回。
+	/*
+	 * 根据class的名字获得对应的校验函数，支持模糊查询
+	 * 如果存在，返回该class对应的校验函数
+	 * 如果不存在，new一个Validator对象返回。
+	 * 返回以methodName开头的最长匹配
+     * 比如获取validate-ajax-responseJudge-multiParams-http://localhost:8080/test.do-id-id-id的校验方法
+     * validate-ajax、validate-ajax-responseJudege、validate-ajax-responseJudge-multiParams都可以匹配
+     * 框架会选择最长的并且最早出现的作为校验函数
+	 */
 	get : function(name) {
 			  var resultMethodName;
+			  var maxMatchLength = 0;
 			  for(var methodName in Validation.methods) {
-				  if(name == methodName) {
-					  resultMethodName = methodName;
-					  break;
-				  }
-				  if(name.indexOf(methodName) >= 0) {
-					  resultMethodName = methodName;
-				  }
+			  	if(name == methodName) {
+			  		resultMethodName = methodName;
+			  		break;
+			  	}
+			  	if(name.indexOf(methodName) == 0) {
+			  		if(methodName.length > maxMatchLength){
+			  			maxMatchLength = methodName.length;
+			  			resultMethodName = methodName;
+			  		}
+			  	}
 			  }
 			  return Validation.methods[resultMethodName] ? Validation.methods[resultMethodName] : new Validator();
 		  },
